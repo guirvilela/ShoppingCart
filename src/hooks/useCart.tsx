@@ -3,6 +3,7 @@ import {
   ReactNode,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { toast } from 'react-toastify';
@@ -38,6 +39,20 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     return [];
   });
 
+  const prevCartRef = useRef<Product[]>();
+
+  const cartPreviousValue = prevCartRef.current ?? cart;
+
+  useEffect(() => {
+    prevCartRef.current = cart;
+  });
+
+  useEffect(() => {
+    if (cartPreviousValue !== cart) {
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart));
+    }
+  }, [cart, cartPreviousValue]);
+
   const addProduct = async (productId: number) => {
     try {
       const updatedCart = [...cart];
@@ -67,8 +82,6 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         updatedCart.push(newProduct);
       }
       setCart(updatedCart);
-
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
     } catch {
       toast.error('Erro na adição do produto');
     }

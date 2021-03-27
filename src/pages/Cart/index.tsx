@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
+
+import 'react-credit-cards/es/styles-compiled.css';
+
 import {
   MdDelete,
   MdAddCircleOutline,
   MdRemoveCircleOutline,
 } from 'react-icons/md';
+import { ModalComponent } from '../../components/Modal/modal';
 
 import { useCart } from '../../hooks/useCart';
-import { api } from '../../services/api';
 import { formatPrice } from '../../util/format';
-// import { formatPrice } from '../../util/format';
 import { Container, ProductTable, Total } from './styles';
 
 interface Product {
@@ -18,19 +20,22 @@ interface Product {
   image: string;
   amount: number;
 }
-type ProductType = Pick<Product, 'id' | 'amount'>;
 
 const Cart = (): JSX.Element => {
   const { cart, removeProduct, updateProductAmount } = useCart();
-  // const cartFormatted = cart.map(product => ({
-  //   // TODO
-  // }))
-  // const total =
-  //   formatPrice(
-  //     cart.reduce((sumTotal, product) => {
-  //       // TODO
-  //     }, 0)
-  //   )
+  const [isOpenModal, setIsOpenModal] = useState(false);
+
+  const cartFormatted = cart.map((product) => ({
+    ...product,
+    priceFormatted: formatPrice(product.price),
+    subTotal: formatPrice(product.price * product.amount),
+  }));
+
+  const total = formatPrice(
+    cart.reduce((sumTotal, product) => {
+      return sumTotal + product.price * product.amount;
+    }, 0),
+  );
 
   useEffect(() => {
     const products = async () => {
@@ -53,6 +58,16 @@ const Cart = (): JSX.Element => {
     removeProduct(productId);
   }
 
+  function handleFinallyShop(event: FormEvent) {
+    event.preventDefault();
+
+    setIsOpenModal(true);
+  }
+
+  function onCloseModal() {
+    setIsOpenModal(false);
+  }
+
   return (
     <Container>
       <ProductTable>
@@ -66,7 +81,7 @@ const Cart = (): JSX.Element => {
           </tr>
         </thead>
         <tbody>
-          {cart.map((product) => (
+          {cartFormatted.map((product) => (
             <tr key={product.id} data-testid="product">
               <td>
                 <img src={product.image} alt={product.title} />
@@ -101,7 +116,7 @@ const Cart = (): JSX.Element => {
                 </div>
               </td>
               <td>
-                <strong>{formatPrice(product.price)}</strong>
+                <strong>{product.subTotal}</strong>
               </td>
               <td>
                 <button
@@ -118,13 +133,20 @@ const Cart = (): JSX.Element => {
       </ProductTable>
 
       <footer>
-        <button type="button">Finalizar pedido</button>
+        <button type="submit" onClick={handleFinallyShop}>
+          Finalizar pedido
+        </button>
 
         <Total>
           <span>TOTAL</span>
-          <strong>R$ 359,80</strong>
+          <strong>{total}</strong>
         </Total>
       </footer>
+
+      <ModalComponent
+        isOpen={isOpenModal}
+        onModalClose={onCloseModal}
+      ></ModalComponent>
     </Container>
   );
 };
